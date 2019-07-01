@@ -2,13 +2,12 @@
 
 namespace Trax\XapiServer\Units;
 
-use DB;
-
+use Trax\DataStore\Utils\Transaction;
 use Trax\XapiServer\Utils\StatementUtils;
 
 class XapiStoresUnit
 {
-    use StatementUtils;
+    use StatementUtils, Transaction;
 
     /**
      * Services.
@@ -30,7 +29,7 @@ class XapiStoresUnit
     public function recordStatement($statementId, $statement, $attachments = [])
     {
         // Start Transaction
-        $res = DB::transaction(function () use ($statementId, $statement, $attachments) {
+        $res = $this->transaction(function () use ($statementId, $statement, $attachments) {
 
             // Store statement
             $statementStore = $this->services->xapiStatements();
@@ -42,7 +41,7 @@ class XapiStoresUnit
             $this->recordStatementsComplements($attachments, $agents, $activities);
 
             return $id;
-        });
+        }, $this->transactionSupported());
         return $res;
     }
 
@@ -52,7 +51,7 @@ class XapiStoresUnit
     public function recordStatements($statements, $attachments = [])
     {
         // Start Transaction
-        $res = DB::transaction(function () use ($statements, $attachments) {
+        $res = $this->transaction(function () use ($statements, $attachments) {
         
             // Store statements
             $statementStore = $this->services->xapiStatements();
@@ -71,7 +70,7 @@ class XapiStoresUnit
             $this->recordStatementsComplements($attachments, $agents, $activities);
 
             return $res;
-        });
+        }, $this->transactionSupported());
         return $res;
     }
 
@@ -97,6 +96,14 @@ class XapiStoresUnit
         foreach ($agents as $agent) {
             $agentStore->store($agent);
         }
+    }
+
+    /**
+     * Is transaction supported?
+     */
+    protected function transactionSupported()
+    {
+        return config('trax-xapi-server.stores.Statement.driver') != 'mongo';
     }
 
 }
