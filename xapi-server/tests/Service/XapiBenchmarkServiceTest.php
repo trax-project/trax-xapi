@@ -2,13 +2,22 @@
 
 namespace Trax\XapiServer\Tests\Service;
 
+use Trax\XapiServer\Tests\Profile\XapiProfile;
+
 class XapiBenchmarkServiceTest extends XapiServiceTest
 {
+    use XapiProfile;
+
 
     /**
-     * Benchmark size.
+     * Batch size.
      */
-    protected $size = 1000000;
+    protected $batchSize = 1000;
+
+    /**
+     * Batch number.
+     */
+    protected $batchNumber = 1000;
 
     
     /**
@@ -17,7 +26,7 @@ class XapiBenchmarkServiceTest extends XapiServiceTest
      */
     public function test_benchmark_client()
     {
-        for ($i=0; $i < $this->size; $i++) {
+        for ($i=0; $i < $this->batchSize; $i++) {
             $statement = [
                 'actor' => ['mbox' => 'mailto:learner1@xapi.fr'],
                 'verb' => ['id' => 'http://adlnet.gov/expapi/verbs/completed'],
@@ -36,13 +45,13 @@ class XapiBenchmarkServiceTest extends XapiServiceTest
      */
     public function test_benchmark_builder()
     {
-        for ($i=0; $i < $this->size; $i++) {
+        for ($i=0; $i < $this->batchSize; $i++) {
             $passed = \XapiDesign::profile()->statement('actor-mbox')->test()->assert();
             $this->assertTrue($passed);
             fwrite(STDERR, print_r('.', TRUE));
         }
     }
-    
+
     /**
      * Seeder function. 
      */
@@ -50,19 +59,48 @@ class XapiBenchmarkServiceTest extends XapiServiceTest
     {
         $verbs = ['attempted', 'completed', 'passed', 'failed'];
         $faker = \Faker\Factory::create();
-        $builder = \XapiDesign::builder();
+        $builder = $this->builder();
         $store = \XapiServer::xapiStatements();
 
-        for ($i=0; $i < $this->size; $i++) {
-            $statement = $builder
-                ->agent($faker->email)
-                ->verb($verbs[rand(0, 3)])
-                ->activity($faker->randomNumber())
-                ->get();
-            $store->store($statement);
-            //fwrite(STDERR, print_r('.', TRUE));
+        for ($i = 0; $i < $this->batchNumber; $i++) {
+            $batch = [];
+            for ($j = 0; $j < $this->batchSize; $j++) {
+                $batch[] = $builder
+                    ->agent()
+                    ->mbox($faker->email)
+                    ->verb()
+                    ->id($verbs[rand(0, 3)])
+                    ->activity()
+                    ->id($faker->randomNumber())
+                    ->get();
+            }
+            $store->bulkStore($batch);
+            fwrite(STDERR, print_r('.', TRUE));
         }
         $this->assertTrue(true);
+    }
+
+
+    /**
+     * Getter function. 
+     */
+    public function test_get()
+    {
+        // When we get statements
+        $response = \XapiClient::statements()->get([
+            'since' => '2019-07-16T00:00:00Z',
+            //'until' => '2019-07-16T00:00:00Z',
+            'from' => '4000000',
+            'limit' => '1000',
+        ])->send($this->context);
+
+        // We get a 200 code
+        $this->assertTrue($response->code == 200);
+
+        // Get the content
+        $content = json_decode($response->content);
+        $statements = $content->statements;
+        print_r(count($statements) . ' statements found');
     }
     
     

@@ -2,8 +2,13 @@
 
 namespace Trax\XapiServer\Tests\Service;
 
+use Trax\XapiServer\Tests\Profile\XapiProfile;
+
 class XapiSampleServiceTest extends XapiServiceTest
 {
+    use XapiProfile;
+
+
     public function test_client_get()
     {
         // When we get statements
@@ -37,7 +42,7 @@ class XapiSampleServiceTest extends XapiServiceTest
     public function test_builder_record()
     {
         // Given a Statement, when I record it
-        $response = \XapiDesign::builder()
+        $response = $this->builder()
             ->agent('sebastien@fraysse.eu')
             ->verb('http://adlnet.gov/expapi/verbs/completed')
             ->activity('http://xapi.fr/activities/act01')
@@ -50,7 +55,7 @@ class XapiSampleServiceTest extends XapiServiceTest
     public function test_builder_post()
     {
         // Given a Statement, when I post it
-        $response = \XapiDesign::builder()
+        $response = $this->builder()
             ->agent('sebastien@fraysse.eu')
             ->verb('completed')
             ->activity('act1')
