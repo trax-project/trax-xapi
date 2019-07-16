@@ -84,6 +84,7 @@ class XapiStatementStore extends StatementStore
             unset($query['order-by']);
             unset($query['order-dir']);
             unset($query['search']);
+            unset($query['since']);     // From does the job on the ID column.
             $query['from'] = $last->id;
             $result->more = $options['url'].'?'.http_build_query($query);
         }
